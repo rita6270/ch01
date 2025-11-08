@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+</head>
+<body>
+  <p>Before the script...</p>
+
+  <script>
+    let friends = [];
+
+    let friend1 = {
+      name: '陳大同',
+      age: 26,
+      hobbies: ['爬山', '看電影', '煮咖啡'],
+      contact: {
+        phone: '0912345678',
+        email: 'datong@example.com'
+      }
+    };
+
+    let friend2 = {
+      name: '林小美',
+      age: 24,
+      hobbies: ['閱讀', '旅行'],
+      contact: {
+        phone: '0922333444',
+        email: 'xiaomei@example.com'
+      }
+    };
+
+    let friend3 = {
+      name: '王志明',
+      age: 28,
+      hobbies: ['打籃球', '聽音樂', '攝影'],
+      contact: {
+        phone: '0933555666',
+        email: 'zhiming@example.com'
+      }
+    };
+
+    friends.push(friend1, friend2, friend3);
+
+    console.log(friends[1].name);
+    console.log(friends[0].hobbies[2]);
+    console.log(friends[2].contact.email);
+
+    friends[1].hobbies.push('游泳');
+  </script>
+
+  <p>...After the script.</p>
+</body>
+</html>
