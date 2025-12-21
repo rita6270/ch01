@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fetch Demo</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .value { font-weight: bold; color: #007bff; }
+        #jsonOutput {
+            background-color: #f6f8fa;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #d0d7de;
+            white-space: pre-wrap;
+            font-family: monospace;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Fetch Demo</h1>
+    
+    <div class="json-output">
+        <h3>JSON 資料格式</h3>
+        <pre id="jsonOutput">讀取中...</pre>
+    </div>
+
+    <script>
+        async function f_test() {
+            let url = 'https://api.github.com/repos/rita6270/ch01/commits';
+
+            try {
+                let response = await fetch(url);
+
+                if (response.ok) {
+                    let commits = await response.json();
+                    const jsonOutput = document.getElementById('jsonOutput');
+                    jsonOutput.textContent = JSON.stringify(commits[0], null, 2); 
+                } else {
+                    document.getElementById('jsonOutput').textContent = "錯誤: " + response.status;
+                }
+            } catch (error) {
+                console.error(error);
+                document.getElementById('jsonOutput').textContent = "錯誤: " + error;
+            }
+        }
+
+        f_test();
+    </script>
+
+</body>
+</html>
