@@ -2,38 +2,77 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>MediaStream API 另一版</title>
+    <title>感測器綜合控制儀表板</title>
     <style>
-        body { display: flex; flex-direction: column; align-items: center; padding-top: 50px; font-family: sans-serif; }
-        video { width: 80%; max-width: 500px; border: 2px solid #333; background: #000; }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+        body { font-family: system-ui, sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; margin-bottom: 20px; }
+        video { width: 100%; border-radius: 8px; background: #000; margin-top: 10px; }
+        .data-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; }
+        button:active { background: #0056b3; }
     </style>
 </head>
 <body>
 
-    <button id="startBtn">啟動多媒體裝置</button>
-    <hr>
-    <video id="webcam" autoplay playsinline></video>
+    <div class="card">
+        <button id="mainBtn">啟動多媒體與感測器</button>
+    </div>
+
+    <div class="card">
+        <strong>即時影像與音訊</strong>
+        <video id="player" autoplay playsinline muted></video>
+    </div>
+
+    <div class="card">
+        <strong>環境感測數據</strong>
+        <div class="data-row"><span>磁力儀 (X, Y, Z)</span><span id="mag">--</span></div>
+        <div class="data-row"><span>光照強度 (Lux)</span><span id="light">--</span></div>
+        <div class="data-row"><span>音訊狀態</span><span id="audio">未連結</span></div>
+    </div>
 
     <script>
-        const startBtn = document.querySelector('#startBtn');
-        const webcam = document.querySelector('#webcam');
+        const btn = document.getElementById('mainBtn');
+        const videoEl = document.getElementById('player');
 
-        startBtn.addEventListener('click', () => {
-            const constraints = { video: true, audio: true };
+        // 啟動影音
+        async function startMedia() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                videoEl.srcObject = stream;
+                document.getElementById('audio').innerText = "串流中";
+            } catch (e) {
+                console.error("影音權限遭拒");
+            }
+        }
 
-            navigator.mediaDevices.getUserMedia(constraints)
-                .then((stream) => {
-                    webcam.srcObject = stream;
-                    startBtn.textContent = "串流中...";
-                    startBtn.disabled = true;
-                })
-                .catch((err) => {
-                    console.error("Error:", err);
-                    alert("存取失敗：" + err.name);
-                });
-        });
+        // 啟動感測器 (磁力與光)
+        function startSensors() {
+            // 磁力計
+            if ('Magnetometer' in window) {
+                const mag = new Magnetometer({ frequency: 5 });
+                mag.onreading = () => {
+                    document.getElementById('mag').innerText = 
+                        `${mag.x.toFixed(1)}, ${mag.y.toFixed(1)}, ${mag.z.toFixed(1)}`;
+                };
+                mag.start();
+            }
+
+            // 環境光
+            if ('AmbientLightSensor' in window) {
+                const light = new AmbientLightSensor();
+                light.onreading = () => {
+                    document.getElementById('light').innerText = light.illuminance + " lx";
+                };
+                light.start();
+            }
+        }
+
+        btn.onclick = () => {
+            startMedia();
+            startSensors();
+            btn.innerText = "監測中...";
+            btn.disabled = true;
+        };
     </script>
-
 </body>
 </html>
