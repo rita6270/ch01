@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>MediaStream API 另一版</title>
+    <style>
+        body { display: flex; flex-direction: column; align-items: center; padding-top: 50px; font-family: sans-serif; }
+        video { width: 80%; max-width: 500px; border: 2px solid #333; background: #000; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <button id="startBtn">啟動多媒體裝置</button>
+    <hr>
+    <video id="webcam" autoplay playsinline></video>
+
+    <script>
+        const startBtn = document.querySelector('#startBtn');
+        const webcam = document.querySelector('#webcam');
+
+        startBtn.addEventListener('click', () => {
+            const constraints = { video: true, audio: true };
+
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then((stream) => {
+                    webcam.srcObject = stream;
+                    startBtn.textContent = "串流中...";
+                    startBtn.disabled = true;
+                })
+                .catch((err) => {
+                    console.error("Error:", err);
+                    alert("存取失敗：" + err.name);
+                });
+        });
+    </script>
+
+</body>
+</html>
