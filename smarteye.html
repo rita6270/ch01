@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Eye Guard - 智慧視力守護者</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* 警告遮罩動畫 */
+        @keyframes pulse-bg {
+            0%, 100% { background-color: rgba(0, 0, 0, 0.95); }
+            50% { background-color: rgba(30, 0, 0, 0.98); }
+        }
+        .warning-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            padding: 24px;
+            animation: pulse-bg 2s infinite;
+        }
+        .active-warning { display: flex; }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans min-h-screen">
+
+    <!-- 頂部導航列 -->
+    <nav class="bg-white border-b px-6 py-4 flex justify-between items-center sticky top-0 z-10">
+        <div class="flex items-center gap-2">
+            <div class="bg-blue-600 p-2 rounded-lg">
+                <i class="fa-solid fa-eye text-white"></i>
+            </div>
+            <h1 class="font-bold text-gray-800 text-lg">Smart Eye Guard</h1>
+        </div>
+        <button id="simBtn" class="text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full hover:bg-blue-100 transition-colors">
+            開啟模擬模式
+        </button>
+    </nav>
+
+    <!-- 主要內容 -->
+    <main class="max-w-md mx-auto p-6 flex flex-col items-center">
+        
+        <!-- 狀態卡片 -->
+        <div class="w-full bg-white rounded-3xl shadow-xl shadow-blue-100 p-8 flex flex-col items-center border border-gray-100 mb-6">
+            <p class="text-gray-400 text-sm font-medium mb-4 uppercase tracking-widest">目前環境照度</p>
+            
+            <div class="relative w-48 h-48 rounded-full border-[12px] border-gray-50 flex items-center justify-center transition-all duration-500" id="luxCircle">
+                <div class="text-center">
+                    <span id="luxVal" class="text-6xl font-black text-gray-800">--</span>
+                    <p class="text-gray-400 font-bold">LUX</p>
+                </div>
+            </div>
+
+            <div id="statusBadge" class="mt-8 px-6 py-2 rounded-full text-sm font-bold bg-green-100 text-green-600">
+                光線充足
+            </div>
+        </div>
+
+        <!-- 數據統計 -->
+        <div class="grid grid-cols-2 gap-4 w-full">
+            <div class="bg-white p-5 rounded-2xl border border-gray-100">
+                <p class="text-gray-400 text-xs mb-1">今日保護次數</p>
+                <p class="text-3xl font-black text-gray-800" id="warnCount">0</p>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-gray-100">
+                <p class="text-gray-400 text-xs mb-1">平均環境亮度</p>
+                <p class="text-3xl font-black text-gray-800">120</p>
+            </div>
+        </div>
+
+        <!-- 衛教資訊 -->
+        <div class="mt-8 bg-amber-50 rounded-2xl p-5 border border-amber-100">
+            <div class="flex gap-3">
+                <i class="fa-solid fa-lightbulb text-amber-500 mt-1"></i>
+                <div>
+                    <h4 class="font-bold text-amber-800 text-sm">為什麼需要監測？</h4>
+                    <p class="text-amber-700 text-xs mt-1 leading-relaxed">
+                        當照度低於 20 LUX 時，手機螢幕的藍光對視網膜的傷害會大幅提升。建議保持在 300 LUX 以上的閱讀環境。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 模擬滑桿 (預設隱藏) -->
+    <div id="simPanel" class="fixed bottom-0 left-0 right-0 bg-white border-t p-6 shadow-2xl transform translate-y-full transition-transform duration-300 z-20">
+        <div class="flex justify-between items-center mb-4">
+            <span class="font-bold text-gray-700 text-sm">手動調整模擬亮度 (LUX)</span>
+            <span id="simDisplay" class="font-mono text-blue-600 font-bold">100</span>
+        </div>
+        <input type="range" id="simRange" min="0" max="200" value="100" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+    </div>
+
+    <!-- 警告畫面遮罩 -->
+    <div id="warnOverlay" class="warning-overlay">
+        <div class="bg-red-600 w-24 h-24 rounded-full flex items-center justify-center mb-8 shadow-2xl shadow-red-500/50">
+            <i class="fa-solid fa-triangle-exclamation text-4xl text-white"></i>
+        </div>
+        <h2 class="text-4xl font-black mb-4">環境光線嚴重不足！</h2>
+        <p class="text-gray-300 text-lg mb-10 max-w-xs leading-relaxed">
+            為了您的眼睛健康，系統已強制鎖定。請移動至明亮處後再繼續使用。
+        </p>
+        <button id="dismissBtn" class="bg-white text-gray-900 px-10 py-4 rounded-full font-black shadow-xl active:scale-95 transition-transform">
+            我已改善環境
+        </button>
+    </div>
+
+    <script>
+        // DOM 元素
+        const luxVal = document.getElementById('luxVal');
+        const luxCircle = document.getElementById('luxCircle');
+        const statusBadge = document.getElementById('statusBadge');
+        const warnOverlay = document.getElementById('warnOverlay');
+        const warnCountEl = document.getElementById('warnCount');
+        const simBtn = document.getElementById('simBtn');
+        const simPanel = document.getElementById('simPanel');
+        const simRange = document.getElementById('simRange');
+        const simDisplay = document.getElementById('simDisplay');
+        const dismissBtn = document.getElementById('dismissBtn');
+
+        let warningCount = 0;
+        let isSimulation = false;
+
+        // 更新 UI 邏輯
+        function updateUI(lux) {
+            const val = Math.round(lux);
+            luxVal.textContent = val;
+            
+            // 改變圓圈顏色
+            if (val < 20) {
+                luxCircle.style.borderColor = '#fee2e2'; // 紅色系
+                statusBadge.className = "mt-8 px-6 py-2 rounded-full text-sm font-bold bg-red-100 text-red-600";
+                statusBadge.textContent = "光線危險";
+                triggerWarning();
+            } else if (val < 100) {
+                luxCircle.style.borderColor = '#fef3c7'; // 黃色系
+                statusBadge.className = "mt-8 px-6 py-2 rounded-full text-sm font-bold bg-amber-100 text-amber-600";
+                statusBadge.textContent = "光線偏暗";
+            } else {
+                luxCircle.style.borderColor = '#d1fae5'; // 綠色系
+                statusBadge.className = "mt-8 px-6 py-2 rounded-full text-sm font-bold bg-green-100 text-green-600";
+                statusBadge.textContent = "光線充足";
+            }
+        }
+
+        // 觸發警告
+        function triggerWarning() {
+            if (!warnOverlay.classList.contains('active-warning')) {
+                warnOverlay.classList.add('active-warning');
+                warningCount++;
+                warnCountEl.textContent = warningCount;
+                
+                // 模擬 Fetch 傳送數據至後端
+                console.log("[API] 紀錄異常行為：環境亮度低於閾值", { lux: luxVal.textContent, time: new Date() });
+            }
+        }
+
+        // 關閉警告
+        dismissBtn.onclick = () => {
+            warnOverlay.classList.remove('active-warning');
+        };
+
+        // 模擬模式切換
+        simBtn.onclick = () => {
+            isSimulation = !isSimulation;
+            if (isSimulation) {
+                simBtn.textContent = "關閉模擬";
+                simPanel.style.transform = "translateY(0)";
+                updateUI(simRange.value);
+            } else {
+                simBtn.textContent = "開啟模擬模式";
+                simPanel.style.transform = "translateY(100%)";
+                // 重新嘗試啟動感測器
+                initSensor();
+            }
+        };
+
+        simRange.oninput = (e) => {
+            const val = e.target.value;
+            simDisplay.textContent = val;
+            if (isSimulation) updateUI(val);
+        };
+
+        // 初始化環境光感測器
+        function initSensor() {
+            if ('AmbientLightSensor' in window) {
+                try {
+                    const sensor = new AmbientLightSensor();
+                    sensor.onreading = () => {
+                        if (!isSimulation) updateUI(sensor.lux);
+                    };
+                    sensor.onerror = (event) => {
+                        console.error("感測器錯誤:", event.error.name);
+                        luxVal.textContent = "N/A";
+                    };
+                    sensor.start();
+                } catch (err) {
+                    console.warn("無法啟動感測器:", err);
+                }
+            } else {
+                luxVal.textContent = "不支援";
+            }
+        }
+
+        // 頁面載入後初始化
+        window.onload = initSensor;
+    </script>
+</body>
+</html>
